@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090909">
+<title>My Gallery</title>
+<style>
+:root{color-scheme:dark;--bg:#090909;--panel:#141414;--muted:#a4a4a4;--line:#292929;--accent:#e5e5e5}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#1c1c1c 0,#090909 52%);color:#f7f7f7;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+header{padding:42px 18px 24px;text-align:center;border-bottom:1px solid var(--line)}
+.logo{font-size:12px;letter-spacing:.35em;text-transform:uppercase;color:#aaa}
+h1{font-size:clamp(36px,8vw,64px);letter-spacing:-.055em;margin:12px 0 8px}
+header p{color:var(--muted);margin:0}
+main{max-width:1000px;margin:auto;padding:22px 16px 60px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:20px}
+.tabs{display:flex;gap:8px}
+button,.upload-label{font:inherit;color:#eee;background:#171717;border:1px solid #353535;border-radius:999px;padding:10px 15px;cursor:pointer}
+button.active{background:#f1f1f1;color:#111;border-color:#f1f1f1}
+button:hover,.upload-label:hover{border-color:#888}
+#upload{display:none}
+.note{font-size:12px;color:#969696;margin:0 0 20px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.item{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:130px;aspect-ratio:1/1;display:grid;place-items:center}
+.item img,.item video{width:100%;height:100%;object-fit:cover;display:block}
+.item .placeholder{padding:15px;text-align:center;color:#999;font-size:13px}
+.item .placeholder strong{display:block;color:#eee;font-size:26px;margin-bottom:8px}
+.item .remove{position:absolute;top:8px;right:8px;background:#000b;border-color:#ffffff44;padding:5px 9px;font-size:12px}
+.item .type{position:absolute;bottom:8px;left:8px;background:#000b;border-radius:6px;padding:4px 7px;font-size:11px;color:#eee}
+.empty{grid-column:1/-1;border:1px dashed #3a3a3a;border-radius:16px;padding:36px 18px;text-align:center;color:#aaa}
+footer{text-align:center;color:#777;font-size:12px;padding:0 15px 26px}
+@media(max-width:600px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.toolbar{align-items:stretch}.tabs{width:100%}.tabs button{flex:1}.upload-label{text-align:center;width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">PERSONAL MEDIA SPACE</div>
+  <h1>My Gallery</h1>
+  <p>A little collection of moments.</p>
+</header>
+<main>
+  <div class="toolbar">
+    <div class="tabs" aria-label="Filter gallery">
+      <button class="active" data-filter="all">All</button>
+      <button data-filter="image">Photos</button>
+      <button data-filter="video">Videos</button>
+    </div>
+    <label class="upload-label" for="upload">＋ Add photos / videos</label>
+    <input id="upload" type="file" accept="image/*,video/*" multiple>
+  </div>
+  <p class="note">Preview template: files you add here stay in this browser session and are not uploaded or shared. To show media to everyone with your public link, the site needs a media-hosting/upload setup.</p>
+  <section id="gallery" class="grid" aria-live="polite">
+    <div class="empty">Your gallery is ready.<br>Tap <b>＋ Add photos / videos</b> to preview your files here.</div>
+  </section>
+</main>
+<footer>My Gallery · Dark edition</footer>
+<script>
+const upload=document.querySelector('#upload'),gallery=document.querySelector('#gallery');
+const filters=[...document.querySelectorAll('[data-filter]')];
+let entries=[],filter='all';
+function render(){
+  gallery.innerHTML='';
+  const shown=entries.filter(e=>filter==='all'||e.type===filter);
+  if(!shown.length){gallery.innerHTML='<div class="empty">No media here yet.<br>Add a photo or video to preview it.</div>';return}
+  shown.forEach(e=>{
+    const card=document.createElement('article');card.className='item';
+    const media=e.type==='image'?document.createElement('img'):document.createElement('video');
+    media.src=e.url;media.alt=e.file.name; if(e.type==='video'){media.controls=true;media.preload='metadata'}
+    card.append(media);
+    const tag=document.createElement('span');tag.className='type';tag.textContent=e.type==='image'?'PHOTO':'VIDEO';card.append(tag);
+    const remove=document.createElement('button');remove.className='remove';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+e.file.name);
+    remove.addEventListener('click',()=>{URL.revokeObjectURL(e.url);entries=entries.filter(x=>x!==e);render()});card.append(remove);
+    gallery.append(card);
+  });
+}
+upload.addEventListener('change',()=>{
+  for(const file of upload.files){
+    if(!file.type.startsWith('image/')&&!file.type.startsWith('video/'))continue;
+    entries.push({file,type:file.type.startsWith('image/')?'image':'video',url:URL.createObjectURL(file)});
+  }
+  upload.value='';render();
+});
+filters.forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;filters.forEach(x=>x.classList.toggle('active',x===b));render()}));
+</script>
+</body>
+</html>
